@@ -1,0 +1,412 @@
+---
+title: "R_Covid-19_ShoaibNadaf"
+output:
+  html_notebook: default
+  html_document:
+    df_print: paged
+---
+# What is Coronavirus
+
+Coronaviruses are a large family of viruses which may cause illness in animals or humans. In humans, several coronaviruses are known to cause respiratory infections ranging from the common cold to more severe diseases such as Middle East Respiratory Syndrome (MERS) and Severe Acute Respiratory Syndrome (SARS). The most recently discovered coronavirus causes coronavirus disease COVID-19.
+
+# What are the symptoms of COVID-19?
+
+The most common symptoms of COVID-19 are fever, tiredness, and dry cough. Some patients may have aches and pains, nasal congestion, runny nose, sore throat or diarrhea. These symptoms are usually mild and begin gradually. Some people become infected but don’t develop any symptoms and don't feel unwell. Most people (about 80%) recover from the disease without needing special treatment. Around 1 out of every 6 people who gets COVID-19 becomes seriously ill and develops difficulty breathing. Older people, and those with underlying medical problems like high blood pressure, heart problems or diabetes, are more likely to develop serious illness. People with fever, cough and difficulty breathing should seek medical attention
+
+# Covid Data Import  
+
+This is where we get the Covid-19 Data :
+https://www.ecdc.europa.eu/en/geographical-distribution-2019-ncov-cases
+
+#install.packages("httr")
+#install.packages("readxl")
+
+## Install packages:
+
+install.packages("httr")
+install.packages("readxl")
+install.packages("kableExtra")
+install.packages("RCurl")
+install.packages("ggplot2")
+
+```{r include = FALSE}
+# install.packages("httr")
+# install.packages("readxl")
+# install.packages("kableExtra")
+# install.packages("RCurl")
+# install.packages("ggplot2")
+#install.packages("utils")
+
+```
+
+## Loading the library and Download The Data from above mentioned website  :
+```{r}
+#rm(list=ls())
+library(ggplot2)
+library(dplyr)
+
+#these libraries need to be loaded
+library(utils)
+library(httr)
+#library(readxl)
+covid_df <- read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", na.strings = "", fileEncoding = "UTF-8-BOM")
+GET("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", authenticate(":",":",type = "ntlm")
+    , write_disk(tf <- tempfile(fileext = ".csv")))
+covid_df <- read.csv((tf))
+head(covid_df ,3)
+#write.csv(tf)
+
+```
+## World Exploratory Data :
+
+```{r}
+covid_world =covid_df
+#india_cases
+covid_world$dateRep<-as.Date.character(covid_world$dateRep,format = c("%d/%m/%y"))
+covid_world
+
+info_cov_world<-arrange(covid_world,dateRep) %>% group_by(dateRep) %>% summarize(cases=sum(cases),deaths=sum(deaths))
+ggplot(info_cov_world,aes(x=dateRep))+geom_line(aes(y=cases,color="Cases"), size=1)+theme_bw() +ylab("Total Count")+xlab("Period")+ labs(title="Cummulative Count of Covid19 Cases",color = "Legend")+scale_color_manual(values = c("gold","red"))
+
+
+ggplot(info_cov_world,aes(x=dateRep)) + geom_line(aes(y=deaths,color="Death"), size=1) +labs(title = "Cummulative Count of Covid19 Deaths")
+
+```
+
+
+#Covid 19 Data cleanUp
+
+```{r}
+names(covid_df)
+```
+
+# Covid Explore 
+Cases :
+```{r}
+Covid_cases_total <- sum(covid_df$cases)
+Covid_cases_total
+```
+There have been `r Covid_cases_total` Cases in the world since `r Sys.Date()`
+
+
+Deaths :
+```{r}
+
+Covid_deaths_total <- sum(covid_df$deaths)
+Covid_deaths_total
+
+```
+
+
+There have been `r Covid_deaths_total` Deaths in the world since `r Sys.Date()`
+
+
+The features we have are : `r names(covid_df)`
+
+*Use this method (1)*
+
+library(dplyr)
+library(kableExtra)
+covid_df %>% group_by(countriesAndTerritories) %>% mutate(deathRate = sum (covid_df$deaths)/sum(covid_df$cases))
+kable(covid_df) %>%
+kable_paper(bootstrap_options = "striped", full_width = F)
+```{r}
+# library(dplyr)
+# library(kableExtra)
+# covid_df %>% group_by(`countriesAndTerritories`) %>% mutate(deathRate = sum (covid_df$deaths)/sum(covid_df$cases))
+# kbl(covid_df) %>%
+#   kable_paper(bootstrap_options = "striped", full_width = F)
+```
+
+
+*Use this method (2)* 
+```{r}
+
+library(DT)
+
+#r_covid_df <- covid_df %>% head(100)
+datatable(
+  covid_df ,extensions = "Buttons" ,options = list(dom = "Bfrtip" , buttons =  c('copy' ,'csv','excel','pdf','print'))
+)
+```
+
+# Graphs {.tabset}
+## Graph A: No Of Deaths In CountriesAndTerritories
+*No Of Deaths In CountriesAndTerritories*
+```{r }
+library(ggplot2)
+library(dplyr)
+#covid_df %>% filter(deaths > 0) %>% View()
+covid_df %>% filter(deaths > 100) %>% 
+  group_by(countriesAndTerritories) %>% summarise(Cases_Total = sum(cases) , deaths_Total = sum(deaths)) %>%
+  ggplot(aes(countriesAndTerritories))+ #geom_point(aes(x = Cases_Total ) ,color = "yellow") +
+  geom_point(aes(y = deaths_Total ), color = "red") + coord_flip()
+
+```
+
+
+
+## Graph B : No Of Cases In CountriesAndTerritories:
+*No Of Cases In CountriesAndTerritories*
+
+```{r }
+library(ggplot2)
+library(dplyr)
+#covid_df %>% filter(deaths > 0) %>% View()
+covid_df %>% filter(deaths > 100 ) %>% 
+  group_by(countriesAndTerritories) %>% summarise(Cases_Total = sum(cases)) %>%
+  ggplot(aes(countriesAndTerritories))+ #geom_point(aes(x = Cases_Total ) ,color = "yellow") +
+  geom_point(aes(y = Cases_Total )) + coord_flip()
+
+```
+
+```{r}
+head(covid_df)
+```
+
+## Graph C : Deaths VS Cases (Global) 
+*Scatter Plot  Deaths VS Cases (Global)* 
+```{r}
+library(ggplot2)
+deaths_ = covid_df$deaths
+cases_ = covid_df$cases
+scatter_cases_deaths <- ggplot(covid_df, aes(x = cases , y = deaths , color = month)) + 
+  geom_point()
+
+scatter_cases_deaths + labs(title = "Scatter Plot  Deaths VS Cases")
+
+```
+
+## Graph D : 
+*Cases VS continentExp*
+
+
+```{r}
+
+library(ggplot2)
+scatter_cases_conti <-  ggplot(covid_df , aes(x = cases , y = continentExp , color = month))+ 
+  geom_point() 
+
+scatter_cases_conti +labs(title = "Cases VS continentExp")   
+  #  ggplot(covid_df , aes(x = deaths , y = continentExp , color = month))+ 
+  # geom_point() 
+
+```
+*Deaths VS continentExp*
+```{r}
+library(ggplot2)
+
+scatter_deaths_conti   <- ggplot(covid_df , aes(x = deaths , y = continentExp , color = month))+ 
+  geom_point() 
+scatter_deaths_conti +labs(title = "Deaths VS continentExp")
+   
+```
+
+**Plots :**
+
+```{r}
+plot(covid_df$cases,covid_df$deaths , xlab = "Cases", ylab = "Deaths" , 
+        main = "Cases VS Deaths")
+
+barplot(covid_df$cases,covid_df$deaths , xlab = "Cases", ylab = "Deaths" , 
+        main = "Cases VS Deaths")
+
+#plot(covid_df$cases, dnorm(covid_df$cases,covid_df$deaths),type="b", lwd=2, col="red")
+#abline(h=0, col="green2")
+#abline(v=0, col="blue")
+
+```
+
+# Daily Report(India) : {.tabset}
+
+```{r}
+#head(covid_df)
+india_cases =covid_df[grep("India", covid_df$countriesAndTerritories),]
+#india_cases
+india_cases$dateRep<-as.Date.character(india_cases$dateRep,format = c("%d/%m/%y"))
+india_cases
+
+info_cov_india1<-arrange(india_cases,dateRep)%>%group_by(dateRep)%>% summarize(cured=sum(cases),deaths=sum(deaths))
+
+
+ggplot(info_cov_india1,aes(x=dateRep))+ geom_line(aes(y=cured,color="Cases"), size=1.5)+theme_bw() +ylab("Total Count")+xlab("Period")+ labs(title="Cummulative Count of Covid19 Cases",color = "Legend")+scale_color_manual(values = c("gold","red"))
+
+
+ggplot(info_cov_india1,aes(x=dateRep))+ geom_line(aes(y=deaths,color="Death"), size=1.5)+labs(title = "Cummulative Count of Covid19 Deaths")
+
+#dev.off()
+
+```
+
+```{r}
+
+library(DT)
+
+#r_covid_df <- covid_df %>% head(100)
+datatable(
+  india_cases,extensions = "Buttons" ,options = list(dom = "Bfrtip" , buttons =  c('copy' ,'csv','excel','pdf','print'))
+)
+
+daily= head(india_cases,1)
+daily
+
+#Daily active cases in India
+
+cat(daily$day,"/",daily$month,"/",daily$year,"reported",daily$cases,"Active Cases in India","\n")
+
+#Daily Decreased in India
+
+cat(daily$day,"/",daily$month,"/",daily$year,"reported",daily$deaths,"Deaths in India")
+
+````
+# Daily Cases in India  `r daily$cases`
+# Daily Deaths in India `r daily$deaths`
+
+**Growth Factor of Daily New Cases**
+
+Growth factor is the factor by which a quantity multiplies itself over time. The formula used is every day's new cases / new cases on the previous day. For example, a quantity growing by 7% every period (in this case daily) has a growth factor of 1.07.
+
+A growth factor above 1 indicates an increase, whereas one which remains between 0 and 1 it is a sign of decline, with the quantity eventually becoming zero, whereas a growth factor constantly above 1 could signal exponential growth
+
+```{r}
+yesterday_active_india =covid_df[grep("India", covid_df$countriesAndTerritories),]
+yesterday= head(yesterday_active_india$cases,2)
+#yesterday
+growth =  yesterday[1] -yesterday[2]
+growth #growth in numbers 
+
+growth_rate = yesterday[1]/yesterday[2]
+growth_rate
+
+```
+
+*Total growth in cases : *`r growth` 
+
+*Total growth_Rate in cases (%): *`r growth_rate` 
+
+
+**Cumulative No. for 14 days of COVID.19 cases per 100000 :**
+
+```{r}
+#head(india_cases)
+#ggplot(india_cases,aes(x = month , y = Cumulative_number_for_14_days_of_COVID.19_cases_per_100000 , color = "red"), xlim = c(0,12))+geom_line()
+head(india_cases,3)
+plot(india_cases$month,india_cases$Cumulative_number_for_14_days_of_COVID.19_cases_per_100000,main = "Months Vs Comulative Number (India)" , xlab = "Months" ,ylab = "Comulative No. for 14 days", type = "l", col="red" , xlim = range(0:12))
+
+
+
+scatterplot3d::scatterplot3d(india_cases$month,india_cases$Cumulative_number_for_14_days_of_COVID.19_cases_per_100000,main = "Months Vs Comulative Number" , xlab = "Months" ,ylab = "Comulative No. for 14 days"
+                             
+)
+
+#dateRep < 2020-09-05
+
+```
+
+
+
+
+## India State wise Data : 
+*FROM 2020/01/30 TILL 2020/05/26*
+
+```{r}
+india_new_state <- read.csv("statewise_data_with_new_cases.csv")
+head(india_new_state,3)
+
+info_cov_india <- read.csv("covid_19_india.csv")
+head(info_cov_india,3)
+
+```
+
+```{r}
+ggplot(india_new_state , aes(x = State.UT, y=Confirmed)) + geom_col(fill="orange")+ theme(axis.text.x=element_text(size=20, angle=90, hjust = 1, vjust = 0.5 ) , plot.background = element_rect( colour = NULL,  size = 20,  linetype = NULL,  color = NULL, fill = NULL, inherit.blank = FALSE)) +xlab("States/UTs")+ylab("Total Cases")+ labs(title="State/UT-wise Cases of COVID-19")+ theme_bw() + geom_text(aes(label=round(Confirmed) ), position=position_dodge(width=1.0),vjust=-0.25,angle=270)+coord_flip()
+
+ggplot(india_new_state, aes(x=State.UT, y=Cured))+geom_col(fill="#00AFBB")+ theme(axis.text.x=element_text(size=10, angle=90, hjust = 1, vjust = 0.5 ) , plot.background = element_rect( colour = NULL,  size = 20,  linetype = NULL,  color = NULL, fill = NULL, inherit.blank = FALSE)) +xlab("States/UTs")+ylab("Recovered")+ labs(title="State/UT-wise Recovered from COVID-19")+ theme_bw()+  geom_text(aes(label=round(Cured) ), position=position_dodge(width=1.0),vjust=-0.25,angle=270)+coord_flip()
+
+ggplot(india_new_state, aes(x=State.UT, y=Deaths))+geom_col(fill="red")+ theme(axis.text.x=element_text(size=10, angle=90, hjust = 1, vjust = 0.5 ) , plot.background = element_rect( colour = NULL,  size = 20,  linetype = NULL,  color = NULL, fill = NULL, inherit.blank = FALSE)) +xlab("States/UTs")+ylab("Deaths")+ labs(title="State/UT-wise Deaths from COVID-19")+ theme_bw()+  geom_text(aes(label=round(Deaths) ), position=position_dodge(width=1.0),vjust=-0.25,angle=270)+coord_flip()
+
+```
+
+# Beds available in India :
+
+```{r}
+bed_data <- read.csv("HospitalBedsIndia.csv",stringsAsFactors = F)
+head(bed_data,3)
+
+bed_data1 <- filter(bed_data,State.UT =="All India")
+bed_data1
+#names(bed_data1)
+
+
+```
+
+**__________________________________________________________________________________________________________________________________**
+
+**Number of Primary Health Center :**`r bed_data1$NumPrimaryHealthCenters_HMIS`
+**Number of Communlity Health Centers :**`r bed_data1$NumCommunityHealthCenters_HMIS`
+**Number of SubDistrict Hospitals :**`r bed_data1$NumSubDistrictHospitals_HMIS`
+**Number of District Hospitals :**`r bed_data1$NumDistrictHospitals_HMIS`
+**Total Public Health Facilities :**`r bed_data1$TotalPublicHealthFacilities_HMIS`
+**Number of Public Beds :**`r bed_data1$NumPublicBeds_HMIS`
+**Number of Rural Hospitals :**`r bed_data1$NumRuralHospitals_NHP18`
+**Number of Urban Hospitals :**`r bed_data1$NumUrbanBeds_NHP18`
+**__________________________________________________________________________________________________________________________________**
+
+
+```{r}
+#plots
+#bed_data #using bed_data 
+
+ggplot(filter(bed_data,State.UT=="All India") )+
+  geom_col(aes(x="Public",y=NumPublicBeds_HMIS,fill="Public")) + geom_col(aes(x="Rural",y=NumRuralBeds_NHP18,fill="Rural"))+ geom_col(aes(x="Urban",y=NumUrbanBeds_NHP18,fill="Urban"))+theme_bw() +ylab("Total Count")+xlab("Beds")+ labs(title="Category of beds available in India",fill = "Legen: Bed Type")+scale_fill_manual(values = c("gold","indianred3","springgreen3"))
+
+```
+
+
+
+## State.UT-wise Beds to population ratio :
+
+```{r}
+options(repr.plot.width = 15, repr.plot.height = 10)
+
+#info_pop_india[ order(info_pop_india [,info_pop_india$State...Union.Territory]), ]
+#info_pop_india<-info_pop_india[with(info_pop_india, order(info_pop_india$State...Union.Territory)),]
+#head(info_pop_india,3)
+#head(bed_data,3)
+#Usage inner_join(x, y, by = NULL, copy = FALSE, suffix = c(".x", ".y"),...)
+#For example, by = c("a" = "b") will match x.a to y.b.
+
+
+info_pop_india<-read.csv("population_india_census2011.csv",stringsAsFactors = F)
+
+info_pop_india1<-inner_join(info_pop_india,bed_data,by=c("State...Union.Territory"="State.UT"))
+info_pop_india1[,"beds_to_pop_ratio"]<-((info_pop_india1$NumPublicBeds_HMIS+info_pop_india1$NumRuralBeds_NHP18+info_pop_india1$NumUrbanBeds_NHP18)/info_pop_india1$Population)
+
+#png(paste0("plot_",names(df)[x],".png"))
+jpeg(file = "StateUT_wise_Beds_to_population_ratio.jpg")
+
+plot_StateUT_wise_Beds_to_population_ratio <- ggplot(info_pop_india1, aes(x=State...Union.Territory, y=beds_to_pop_ratio , col = "red"))+geom_col()+xlab("States/UTs")+theme_bw()+ theme(axis.text.y=element_text(size=10),axis.text.x=element_text(size=10, angle=90, hjust = 1, vjust = 0.5 ),axis.title=element_text(size=21),plot.title = element_text(face = "bold",size=25))+ylab("Beds/Popolation")+ labs(title="State/UT-wise Beds to population ratio")+geom_abline()
+plot_StateUT_wise_Beds_to_population_ratio
+
+#dev.off()
+
+
+```
+```{r}
+plot_StateUT_wise_Beds_to_population_ratio
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
